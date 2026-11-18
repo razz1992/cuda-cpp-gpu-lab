@@ -1,45 +1,53 @@
 # Kaggle notebook cells
 
-## 1. Verify the allocated NVIDIA GPU
+Run these cells in order after setting **Notebook Settings → Accelerator → GPU**.
+
+## 1. Verify the allocated NVIDIA GPU and CUDA compiler
 ```bash
 !nvidia-smi
-```
-
-## 2. Verify the CUDA compiler
-```bash
 !nvcc --version
+!which nvcc
 ```
 
-## 3. Get the source
-Choose one option:
+If `nvcc` is missing, the session has no CUDA C++ compiler available. A CUDA-enabled PyTorch install does not necessarily include the compiler.
 
-Upload the `vector_add.cu` file through the notebook's Add Input panel, then locate it:
+## 2. Clone or update the project
+For a fresh notebook:
 ```bash
-!find /kaggle/input -name 'vector_add.cu'
+!git clone https://github.com/razz1992/cuda-cpp-gpu-lab.git
+%cd cuda-cpp-gpu-lab
 ```
-
-Or clone the Git repository (replace with your repository URL):
+If already cloned in the current session:
 ```bash
-!git clone YOUR_GIT_REPOSITORY_URL
-%cd YOUR_REPOSITORY_PATH
+%cd /kaggle/working/cuda-cpp-gpu-lab
+!git pull origin main
 ```
 
-## 4. Compile
+## 3. Compile and run the correctness example
 ```bash
 !nvcc -O2 -std=c++17 vector_add.cu -o vector_add
-```
-
-## 5. Execute and validate
-```bash
 !./vector_add
 !./vector_add 10000000
-!./vector_add 50000000
 ```
 
-## 6. Inspect GPU utilization
-Run while a sufficiently long GPU workload is executing:
+## 4. Compile and run CPU-vs-GPU benchmark
 ```bash
-!nvidia-smi
+!nvcc -O2 -std=c++17 benchmark.cu -o benchmark
+!./benchmark
+```
+Arguments are `./benchmark [element_count] [iterations]`. Suggested experiments:
+```bash
+!./benchmark 1000000 100
+!./benchmark 10000000 100
+!./benchmark 50000000 30
 ```
 
-If `nvcc` is unavailable, confirm that the notebook accelerator is set to GPU and inspect `!which nvcc`. Do not assume installing a Python CUDA package installs the CUDA C++ compiler.
+## 5. Interpret the measurements
+- **CPU average**: repeated CPU vector addition, averaged per iteration.
+- **GPU kernel average**: CUDA kernel execution only, measured with CUDA events; excludes host/device transfers.
+- **GPU end-to-end average**: host-to-device copies + kernel + device-to-host copy, averaged per iteration.
+- Compare CPU with GPU end-to-end for a practical comparison. Kernel-only speedup is useful for understanding GPU compute but is not an apples-to-apples application latency comparison.
+- Small workloads may be slower on GPU because launch and transfer overhead dominate. Results vary by GPU model, allocation, system load, and memory behavior.
+- The CPU and GPU results are validated before the program exits.
+
+Kaggle sessions are ephemeral. Save important output or notebook versions outside the running session.

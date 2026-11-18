@@ -1,33 +1,30 @@
 # CUDA C++ GPU experiments
 
-A minimal CUDA C++ project for testing NVIDIA GPU execution on Kaggle.
+A small CUDA C++ project for learning GPU execution and benchmarking on Kaggle.
 
 ## Files
-- `vector_add.cu`: vector addition kernel, device information, CUDA error checks, and output validation.
+- `vector_add.cu`: basic CUDA vector addition, device information, CUDA error checks, and correctness validation.
+- `benchmark.cu`: CPU baseline vs GPU kernel-only and GPU end-to-end timing, with result validation.
+- `KAGGLE_NOTEBOOK_GUIDE.md`: copy/paste Kaggle notebook cells.
 - `1.cpp`: original example retained unchanged.
 
-## Kaggle GPU test
-1. Open Kaggle Notebooks and create a new notebook.
-2. In Notebook Settings, set Accelerator to **GPU**.
-3. Run:
-   ```bash
-   !nvidia-smi
-   !nvcc --version
-   ```
-4. Upload `vector_add.cu` as a notebook input, or clone this repository.
-5. Compile and run:
-   ```bash
-   !nvcc -O2 -std=c++17 vector_add.cu -o vector_add
-   !./vector_add
-   ```
-6. Try larger workloads:
-   ```bash
-   !./vector_add 10000000
-   !./vector_add 50000000
-   ```
+## Quick start on Kaggle
+Enable **GPU** in Notebook Settings, then run:
+```bash
+!nvidia-smi
+!nvcc --version
+!git clone https://github.com/razz1992/cuda-cpp-gpu-lab.git
+%cd cuda-cpp-gpu-lab
+!nvcc -O2 -std=c++17 vector_add.cu -o vector_add
+!./vector_add
+!nvcc -O2 -std=c++17 benchmark.cu -o benchmark
+!./benchmark
+```
 
-## Notes
-- The code uses CUDA C++ kernel syntax, so compile with `nvcc`, not a regular C++ compiler.
-- GPU availability, GPU model, driver and CUDA Toolkit version depend on the Kaggle session allocation.
-- The sample verifies correctness; it is not a rigorous CPU-vs-GPU benchmark. Kernel launch and host/device transfer overhead matter, especially for small arrays.
-- Kaggle sessions are ephemeral. Save notebook outputs and code to a persistent Kaggle Dataset or Git repository as needed.
+Benchmark syntax: `./benchmark [element_count] [iterations]`.
+For example: `!./benchmark 10000000 100`.
+
+## Benchmark interpretation
+Use **GPU end-to-end** when comparing with CPU for application-level performance. **GPU kernel-only** excludes host/device transfer time and is intended to isolate kernel execution. Small vectors may not benefit from GPU execution because launch and transfer overhead can dominate.
+
+GPU model, driver, CUDA Toolkit version, and compiler availability depend on the Kaggle session allocation.
