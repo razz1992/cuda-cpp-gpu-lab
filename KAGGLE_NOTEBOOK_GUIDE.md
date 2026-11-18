@@ -1,53 +1,37 @@
-# Kaggle notebook cells
+# Kaggle notebook guide
 
-Run these cells in order after setting **Notebook Settings → Accelerator → GPU**.
+The recommended path is to import `KAGGLE_NOTEBOOK_GUIDE.ipynb` and run its cells in order.
 
-## 1. Verify the allocated NVIDIA GPU and CUDA compiler
+## Experiment 1 — baseline
+The notebook verifies the GPU and CUDA compiler, clones or pulls the repository, compiles `vector_add.cu` and `benchmark.cu`, and compares CPU and GPU timings.
+
+## Experiment 2 — GPU memory optimization
+Compile and run:
 ```bash
-!nvidia-smi
-!nvcc --version
-!which nvcc
+!nvcc -O2 -std=c++17 memory_optimization.cu -o memory_optimization
+!./memory_optimization
+```
+Command format: `./memory_optimization [element_count] [iterations]`.
+
+Suggested sizes:
+```bash
+!./memory_optimization 1000000 50
+!./memory_optimization 10000000 50
+!./memory_optimization 50000000 20
 ```
 
-If `nvcc` is missing, the session has no CUDA C++ compiler available. A CUDA-enabled PyTorch install does not necessarily include the compiler.
+### Three approaches
+1. **A — Allocate/free every iteration:** allocate three device buffers, copy input, launch the kernel, copy output, and free buffers on every iteration.
+2. **B — Reuse device allocations:** allocate device buffers once, then reuse them while copying input and output for each iteration.
+3. **C — Pinned host memory + asynchronous stream:** allocate page-locked host buffers once, enqueue asynchronous host-to-device copies, kernel execution, and device-to-host copy in one CUDA stream; synchronize after the batch.
 
-## 2. Clone or update the project
-For a fresh notebook:
-```bash
-!git clone https://github.com/razz1992/cuda-cpp-gpu-lab.git
-%cd cuda-cpp-gpu-lab
-```
-If already cloned in the current session:
-```bash
-%cd /kaggle/working/cuda-cpp-gpu-lab
-!git pull origin main
-```
+### What to focus on
+- Compare A vs B to isolate the cost of repeated `cudaMalloc`/`cudaFree`.
+- Compare B vs C to study pinned host memory and asynchronous stream submission.
+- Verify all three validation statuses are PASS.
+- Repeat each size several times and record GPU model, element count, iterations, and timing.
+- C is a batched stream-throughput measurement, while A/B synchronize through blocking copies each iteration. Treat this as an educational comparison, not a perfectly controlled microbenchmark.
+- Pinned memory consumes a limited system resource. Use it selectively.
+- The current one-stream pipeline serializes H2D → kernel → D2H; overlapping transfers and computation requires independent buffers and a more advanced multi-stream/double-buffered design.
 
-## 3. Compile and run the correctness example
-```bash
-!nvcc -O2 -std=c++17 vector_add.cu -o vector_add
-!./vector_add
-!./vector_add 10000000
-```
-
-## 4. Compile and run CPU-vs-GPU benchmark
-```bash
-!nvcc -O2 -std=c++17 benchmark.cu -o benchmark
-!./benchmark
-```
-Arguments are `./benchmark [element_count] [iterations]`. Suggested experiments:
-```bash
-!./benchmark 1000000 100
-!./benchmark 10000000 100
-!./benchmark 50000000 30
-```
-
-## 5. Interpret the measurements
-- **CPU average**: repeated CPU vector addition, averaged per iteration.
-- **GPU kernel average**: CUDA kernel execution only, measured with CUDA events; excludes host/device transfers.
-- **GPU end-to-end average**: host-to-device copies + kernel + device-to-host copy, averaged per iteration.
-- Compare CPU with GPU end-to-end for a practical comparison. Kernel-only speedup is useful for understanding GPU compute but is not an apples-to-apples application latency comparison.
-- Small workloads may be slower on GPU because launch and transfer overhead dominate. Results vary by GPU model, allocation, system load, and memory behavior.
-- The CPU and GPU results are validated before the program exits.
-
-Kaggle sessions are ephemeral. Save important output or notebook versions outside the running session.
+Kaggle sessions are ephemeral. Save important results before the session ends.
