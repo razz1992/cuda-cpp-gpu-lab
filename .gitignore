@@ -1,0 +1,4 @@
+*.o
+vector_add
+vector_add.exe
+*.out
