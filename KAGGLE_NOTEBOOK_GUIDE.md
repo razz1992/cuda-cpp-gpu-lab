@@ -59,3 +59,21 @@ Suggested tuning sweep:
 !./stream_pipeline 50000000 1000000 10 4
 ```
 This experiment compares a single-stream pinned-memory whole-array baseline against a multi-stream pipeline with chunked transfers, per-stream device buffers, and round-robin chunk submission. Each stream serializes its own H2D → kernel → D2H sequence; independent streams may overlap when supported. The host synchronizes all streams at the end of each iteration. Validate both outputs and compare timing. Do not assume more streams or smaller chunks always improve performance.
+
+
+## Experiment 4 — Memory Coalescing & Access Patterns
+Compile and run:
+```bash
+!nvcc -O2 -std=c++17 memory_access_patterns.cu -o memory_access_patterns
+!./memory_access_patterns 4000000 16 50
+```
+Arguments: output elements, stride, iterations. The benchmark compares contiguous global-memory reads with strided reads, while output writes remain contiguous. Run a stride sweep:
+```bash
+!./memory_access_patterns 4000000 1 50
+!./memory_access_patterns 4000000 2 50
+!./memory_access_patterns 4000000 4 50
+!./memory_access_patterns 4000000 8 50
+!./memory_access_patterns 4000000 16 50
+!./memory_access_patterns 4000000 32 50
+```
+See `EXPERIMENT_4_MEMORY_COALESCING.md` for concepts, benchmark caveats, and result table. Lower stride is not necessarily faster in all cases; stride 1 is the contiguous control, and results are affected by caching and runtime conditions.

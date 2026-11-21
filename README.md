@@ -41,3 +41,10 @@ Warm up the CUDA context, run several iterations, compare correctness, and repea
 - Run: `!./stream_pipeline 50000000 1000000 10 2` (elements, chunk elements, iterations, stream count).
 - Try chunk sizes 250000, 500000, 1000000, 2000000 and stream counts 2, 3, 4. Confirm validation PASS before comparing performance.
 - This is an overlap experiment, not guaranteed speedup: hardware copy engines, transfer size, chunk size, GPU load and scheduling affect results. The baseline and pipeline both use pinned host buffers and repeat the same number of passes.
+
+
+## Experiment 4 — Memory coalescing & access patterns
+- `memory_access_patterns.cu`: compares contiguous global-memory reads with strided reads while maintaining contiguous output writes. Uses CUDA event timing for kernel-only performance and validates each pattern.
+- Build: `!nvcc -O2 -std=c++17 memory_access_patterns.cu -o memory_access_patterns`
+- Run: `!./memory_access_patterns 4000000 16 50` (output elements, stride, iterations).
+- Sweep strides 1, 2, 4, 8, 16, 32. See `EXPERIMENT_4_MEMORY_COALESCING.md` for a detailed guide and caveats.
