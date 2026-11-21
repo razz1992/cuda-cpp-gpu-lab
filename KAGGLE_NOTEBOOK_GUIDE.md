@@ -1,3 +1,5 @@
+[Reading 37 lines from start (total: 37 lines, 0 remaining)]
+
 # Kaggle notebook guide
 
 The recommended path is to import `KAGGLE_NOTEBOOK_GUIDE.ipynb` and run its cells in order.
@@ -35,3 +37,25 @@ Suggested sizes:
 - The current one-stream pipeline serializes H2D → kernel → D2H; overlapping transfers and computation requires independent buffers and a more advanced multi-stream/double-buffered design.
 
 Kaggle sessions are ephemeral. Save important results before the session ends.
+
+[executed on device: RAJNISH (d0b50c61-85ab-4deb-95cd-2a2ec7a660dc)]
+
+## Experiment 3 — Multi-stream chunk pipeline
+Compile:
+```bash
+!nvcc -O2 -std=c++17 stream_pipeline.cu -o stream_pipeline
+```
+Run defaults or parameters (elements, chunk elements, iterations, stream count):
+```bash
+!./stream_pipeline 50000000 1000000 10 2
+```
+Suggested tuning sweep:
+```bash
+!./stream_pipeline 50000000 250000 10 2
+!./stream_pipeline 50000000 500000 10 2
+!./stream_pipeline 50000000 1000000 10 2
+!./stream_pipeline 50000000 2000000 10 2
+!./stream_pipeline 50000000 1000000 10 3
+!./stream_pipeline 50000000 1000000 10 4
+```
+This experiment compares a single-stream pinned-memory whole-array baseline against a multi-stream pipeline with chunked transfers, per-stream device buffers, and round-robin chunk submission. Each stream serializes its own H2D → kernel → D2H sequence; independent streams may overlap when supported. The host synchronizes all streams at the end of each iteration. Validate both outputs and compare timing. Do not assume more streams or smaller chunks always improve performance.

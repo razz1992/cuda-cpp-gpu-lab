@@ -1,3 +1,5 @@
+[Reading 32 lines from start (total: 32 lines, 0 remaining)]
+
 # CUDA C++ GPU experiments
 
 A practical CUDA C++ learning project for Kaggle NVIDIA GPUs.
@@ -30,3 +32,12 @@ Approach C measures batched stream throughput, so compare it as a throughput exp
 
 ## Benchmark discipline
 Warm up the CUDA context, run several iterations, compare correctness, and repeat measurements. Results depend on GPU allocation, host CPU, driver, CUDA Toolkit, and session load. Avoid interpreting one run as a universal performance result.
+
+[executed on device: RAJNISH (d0b50c61-85ab-4deb-95cd-2a2ec7a660dc)]
+
+## Experiment 3 — Multi-stream chunk pipeline
+- `stream_pipeline.cu`: compares a pinned-memory single-stream whole-array baseline against a multi-stream chunked pipeline using independent per-stream device buffers.
+- Build: `!nvcc -O2 -std=c++17 stream_pipeline.cu -o stream_pipeline`
+- Run: `!./stream_pipeline 50000000 1000000 10 2` (elements, chunk elements, iterations, stream count).
+- Try chunk sizes 250000, 500000, 1000000, 2000000 and stream counts 2, 3, 4. Confirm validation PASS before comparing performance.
+- This is an overlap experiment, not guaranteed speedup: hardware copy engines, transfer size, chunk size, GPU load and scheduling affect results. The baseline and pipeline both use pinned host buffers and repeat the same number of passes.
